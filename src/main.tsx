@@ -9,6 +9,7 @@ import "./styles.css";
 import { SettingsProvider } from "./context/SettingsProvider";
 import Tasks from "./routes/tasks";
 import Logs from "./routes/logs";
+import Editor from "./routes/tasks/editor";
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
       {
         path: "/logs",
         element: <Logs />,
+      },
+      {
+        path: "/tasks/editor/:id",
+        element: <Editor />,
       },
     ],
   },

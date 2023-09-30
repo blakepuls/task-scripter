@@ -27,7 +27,9 @@ export default function Layout() {
           <Link className={linkClass} to="/">
             <SiTask
               className={clsx(defaultClass, {
-                [selectedClass]: location.pathname === "/",
+                [selectedClass]:
+                  location.pathname === "/" ||
+                  location.pathname.includes("/tasks"),
               })}
             />
           </Link>
@@ -50,7 +52,7 @@ export default function Layout() {
             />
           </Link>
         </div>
-        <div className="w-screen h-screen max-h-[calc(100vh-32px)] rounded-tl-md bg-base-100 p-5 ">
+        <div className="w-screen h-screen max-h-[calc(100vh-32px)] rounded-tl-md bg-base-100 ">
           <Outlet />
         </div>
       </div>

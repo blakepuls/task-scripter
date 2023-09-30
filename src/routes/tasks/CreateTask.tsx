@@ -3,6 +3,10 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { ITask } from "../../types";
 import { invoke } from "@tauri-apps/api/tauri";
 import { updateTask } from "../../utils/tasks";
+import python from "../../assets/python.svg";
+import bash from "../../assets/bash.svg";
+import shell from "../../assets/shell.svg";
+import clsx from "clsx";
 
 interface CreateTaskButtonProps {
   addTask: (task: ITask) => void;
@@ -16,6 +20,7 @@ export function TaskModal({
   onDelete,
 }: CreateTaskButtonProps) {
   const [taskName, setTaskName] = useState(initialTask?.name || "");
+  const [language, setLanguage] = useState("python");
   const [taskDescription, setTaskDescription] = useState(
     initialTask?.description || ""
   );
@@ -26,14 +31,15 @@ export function TaskModal({
     setTaskName(initialTask?.name || "");
     setTaskDescription(initialTask?.description || "");
     setCronSchedule(initialTask?.schedule || "");
+    setLanguage(initialTask?.language || "python");
     setBackground(true); // You can also reset this if needed
   }, [initialTask]);
 
   const closeModal = () => {
-    setTaskName("");
-    setTaskDescription("");
-    setCronSchedule("");
-    setBackground(true);
+    // setTaskName("");
+    // setTaskDescription("");
+    // setCronSchedule("");
+    // setBackground(true);
   };
 
   const createOrEditTask = () => {
@@ -46,6 +52,7 @@ export function TaskModal({
       name: taskName,
       description: taskDescription,
       schedule: cronSchedule,
+      language: language,
       enabled: true,
     };
 
@@ -68,7 +75,7 @@ export function TaskModal({
         <div className="modal-box">
           <h3 className="font-bold text-lg pb-4 ">Create Task</h3>
           <section className="flex flex-col gap-3">
-            <div className="flex items-center">
+            <div className="flex items-center ">
               <input
                 type="text"
                 placeholder="Name"
@@ -76,6 +83,43 @@ export function TaskModal({
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
               />
+              {!initialTask && (
+                <div className="flex items-center ml-auto gap-2">
+                  <img
+                    src={python}
+                    alt="python"
+                    onClick={() => setLanguage("python")}
+                    className={clsx(
+                      `w-10 h-10 p-1 rounded-full cursor-pointer transition duration-300`,
+                      {
+                        "bg-primary": language === "python",
+                      }
+                    )}
+                  />
+                  <img
+                    src={bash}
+                    alt="bash"
+                    onClick={() => setLanguage("bash")}
+                    className={clsx(
+                      `w-10 h-10 p-1 rounded-full cursor-pointer transition duration-300`,
+                      {
+                        "bg-primary": language === "bash",
+                      }
+                    )}
+                  />
+                  <img
+                    src={shell}
+                    alt="shell"
+                    onClick={() => setLanguage("shell")}
+                    className={clsx(
+                      `w-10 h-10 p-1 rounded-full cursor-pointer overflow-visible transition duration-300`,
+                      {
+                        "bg-primary": language === "shell",
+                      }
+                    )}
+                  />
+                </div>
+              )}
             </div>
             <textarea
               placeholder="Description"

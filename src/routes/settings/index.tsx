@@ -3,7 +3,7 @@ import { useSettingsContext } from "../../context/SettingsProvider";
 import clsx from "clsx";
 
 const themes = ["Dark", "Light"];
-
+import Editor from "@monaco-editor/react";
 export default function Settings() {
   const { setTheme, theme: currentTheme } = useSettingsContext();
 

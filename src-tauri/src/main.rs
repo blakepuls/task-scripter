@@ -21,23 +21,9 @@ pub struct Task {
   description: String,
   schedule: Option<String>,
   enabled: bool,
+  language: String,
 }
 
-// #[tauri::command]
-// fn get_tasks(task: Task) -> Vec<Task> {
-//   // For every folder in the tasks directory, read the file and parse it as a task
-//   let mut tasks: Vec<Task> = Vec::new();
-//   let paths = fs::read_dir("./tasks").unwrap();
-
-//   for path in paths {
-//     let file = fs::read_to_string(path.unwrap().path()).unwrap();
-//     let task: Task = serde_json::from_str(&file).unwrap();
-//     tasks.push(task);
-//   }
-
-//   println!("{:?}", tasks);
-//   return tasks;
-// }
 #[tauri::command]
 fn get_tasks() -> Vec<Task> {
   // For every folder in the $HOME/.task-scripter/tasks directory, read the file and parse it as a task
@@ -67,6 +53,8 @@ fn get_tasks() -> Vec<Task> {
   return tasks;
 }
 
+
+
 fn main() {
   tauri::Builder::default()
       .invoke_handler(tauri::generate_handler![get_tasks])
@@ -77,5 +65,4 @@ fn main() {
       })
       .run(tauri::generate_context!())
       .expect("error while running tauri application");
-
 }

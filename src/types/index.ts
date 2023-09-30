@@ -4,4 +4,9 @@ export interface ITask {
   description: string;
   schedule?: string;
   enabled: boolean;
+  language: string;
+  files?: {
+    path: string;
+    name: string;
+  }[];
 }
