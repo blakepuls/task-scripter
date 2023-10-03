@@ -12,20 +12,20 @@ import { TaskModal } from "./CreateTask";
 import { ITask } from "../../types";
 import { tasks as taskUtil } from "../../utils/";
 import { Link } from "react-router-dom";
-import python from "../../assets/python.svg";
-import bash from "../../assets/bash.svg";
-import shell from "../../assets/shell.svg";
+import py from "../../assets/py.svg";
+import bat from "../../assets/bat.svg";
+import ps from "../../assets/ps.svg";
 
 function LanguageIcon({ language }: { language: string }) {
   switch (language) {
-    case "python":
-      return <img src={python} className="w-7" />;
-    case "bash":
-      return <img src={bash} className="w-7" />;
-    case "shell":
-      return <img src={shell} className="w-7" />;
+    case "py":
+      return <img src={py} className="w-7" />;
+    case "bat":
+      return <img src={bat} className="w-7" />;
+    case "ps":
+      return <img src={ps} className="w-7" />;
     default:
-      return <img src={python} className="w-7" />;
+      return <img src={py} className="w-7" />;
   }
 }
 
@@ -58,7 +58,7 @@ function Task({
   function openEditor() {}
 
   return (
-    <div className="flex flex-row gap-3 bg-base-200 rounded-md p-3">
+    <div className="flex flex-row gap-3 bg-base-200 rounded-md p-3 ">
       <TaskModal addTask={editTask} initialTask={task} onDelete={removeTask} />
       <div className="flex flex-col w-full">
         <div className="flex items-center gap-3 w-full">

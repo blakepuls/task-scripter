@@ -29,7 +29,7 @@ export async function getTasks() {
   var tasks = (await invoke("get_tasks")) as ITask[];
 
   for (let i = 0; i < tasks.length; i++) {
-    const dirs = await fs.readDir(`.task-scripter/tasks/${tasks[i].name}`, {
+    const dirs = await fs.readDir(`.task-scripter/tasks/${tasks[i].name}/src`, {
       dir: BaseDirectory.Home,
       recursive: true,
     });
@@ -45,6 +45,11 @@ export async function updateTask(task: ITask) {
     recursive: true,
   });
 
+  await fs.createDir(`.task-scripter/tasks/${task.name}/src`, {
+    dir: BaseDirectory.Home,
+    recursive: true,
+  });
+
   await fs.writeFile(
     {
       path: `.task-scripter/tasks/${task.name}/task.json`,
@@ -54,6 +59,26 @@ export async function updateTask(task: ITask) {
       dir: BaseDirectory.Home,
     }
   );
+
+  // If index.* doesn't exist, create it
+  const indexExists = await fs.exists(
+    `.task-scripter/tasks/${task.name}/src/index.${task.language}`,
+    {
+      dir: BaseDirectory.Home,
+    }
+  );
+
+  if (!indexExists) {
+    await fs.writeFile(
+      {
+        path: `.task-scripter/tasks/${task.name}/src/index.${task.language}`,
+        contents: "",
+      },
+      {
+        dir: BaseDirectory.Home,
+      }
+    );
+  }
 }
 
 export async function deleteTask(name: string) {
@@ -73,7 +98,7 @@ export async function getTask(name: string) {
 
   const task = JSON.parse(taskRaw) as ITask;
 
-  const dirs = await fs.readDir(`.task-scripter/tasks/${name}`, {
+  const dirs = await fs.readDir(`.task-scripter/tasks/${name}/src`, {
     dir: BaseDirectory.Home,
     recursive: true,
   });

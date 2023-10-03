@@ -5,6 +5,7 @@ export interface ITask {
   schedule?: string;
   enabled: boolean;
   language: string;
+  last_tab: string;
   files?: {
     path: string;
     name: string;

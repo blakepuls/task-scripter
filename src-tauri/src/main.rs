@@ -11,8 +11,6 @@ use tauri::Manager;
 use window_shadows::set_shadow;
 use dirs;
 use std::fs;
-use std::path::PathBuf;
-
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Task {
@@ -22,6 +20,7 @@ pub struct Task {
   schedule: Option<String>,
   enabled: bool,
   language: String,
+  // Optional fields
 }
 
 #[tauri::command]
@@ -52,8 +51,6 @@ fn get_tasks() -> Vec<Task> {
   println!("{:?}", tasks);
   return tasks;
 }
-
-
 
 fn main() {
   tauri::Builder::default()

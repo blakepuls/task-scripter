@@ -9,7 +9,7 @@ import "./styles.css";
 import { SettingsProvider } from "./context/SettingsProvider";
 import Tasks from "./routes/tasks";
 import Logs from "./routes/logs";
-import Editor from "./routes/tasks/editor";
+import Editor from "./routes/tasks/editor/Editor";
 
 const router = createBrowserRouter([
   {

@@ -3,9 +3,9 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { ITask } from "../../types";
 import { invoke } from "@tauri-apps/api/tauri";
 import { updateTask } from "../../utils/tasks";
-import python from "../../assets/python.svg";
-import bash from "../../assets/bash.svg";
-import shell from "../../assets/shell.svg";
+import py from "../../assets/py.svg";
+import bat from "../../assets/bat.svg";
+import ps from "../../assets/ps.svg";
 import clsx from "clsx";
 
 interface CreateTaskButtonProps {
@@ -20,7 +20,7 @@ export function TaskModal({
   onDelete,
 }: CreateTaskButtonProps) {
   const [taskName, setTaskName] = useState(initialTask?.name || "");
-  const [language, setLanguage] = useState("python");
+  const [language, setLanguage] = useState("py");
   const [taskDescription, setTaskDescription] = useState(
     initialTask?.description || ""
   );
@@ -31,7 +31,7 @@ export function TaskModal({
     setTaskName(initialTask?.name || "");
     setTaskDescription(initialTask?.description || "");
     setCronSchedule(initialTask?.schedule || "");
-    setLanguage(initialTask?.language || "python");
+    setLanguage(initialTask?.language || "py");
     setBackground(true); // You can also reset this if needed
   }, [initialTask]);
 
@@ -86,35 +86,35 @@ export function TaskModal({
               {!initialTask && (
                 <div className="flex items-center ml-auto gap-2">
                   <img
-                    src={python}
-                    alt="python"
-                    onClick={() => setLanguage("python")}
+                    src={py}
+                    alt="py"
+                    onClick={() => setLanguage("py")}
                     className={clsx(
                       `w-10 h-10 p-1 rounded-full cursor-pointer transition duration-300`,
                       {
-                        "bg-primary": language === "python",
+                        "bg-primary": language === "py",
                       }
                     )}
                   />
                   <img
-                    src={bash}
-                    alt="bash"
-                    onClick={() => setLanguage("bash")}
+                    src={bat}
+                    alt="bat"
+                    onClick={() => setLanguage("bat")}
                     className={clsx(
                       `w-10 h-10 p-1 rounded-full cursor-pointer transition duration-300`,
                       {
-                        "bg-primary": language === "bash",
+                        "bg-primary": language === "bat",
                       }
                     )}
                   />
                   <img
-                    src={shell}
-                    alt="shell"
-                    onClick={() => setLanguage("shell")}
+                    src={ps}
+                    alt="ps"
+                    onClick={() => setLanguage("ps")}
                     className={clsx(
                       `w-10 h-10 p-1 rounded-full cursor-pointer overflow-visible transition duration-300`,
                       {
-                        "bg-primary": language === "shell",
+                        "bg-primary": language === "ps",
                       }
                     )}
                   />

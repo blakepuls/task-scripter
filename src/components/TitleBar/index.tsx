@@ -33,7 +33,7 @@ export default function TitleBar() {
         alt="logo"
         className="w-6 h-6 ml-1.5 mt-1 overflow-visible"
       />
-      <h1 className="text-md p-1.5 font-semibold">Task Scripter</h1>
+      <h1 className="text-md p-1.5 font-semibold truncate">Task Scripter</h1>
       <div className="ml-auto">
         <button className={style} onClick={() => appWindow.minimize()}>
           <VscChromeMinimize className="m-auto" />

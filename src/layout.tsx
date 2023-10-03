@@ -41,9 +41,6 @@ export default function Layout() {
             />
           </Link>
           <div className="flex-grow" />
-          <button className="btn" onClick={test}>
-            Test
-          </button>
           <Link className={linkClass} to="/settings">
             <AiOutlineSetting
               className={clsx(defaultClass, {
@@ -52,7 +49,7 @@ export default function Layout() {
             />
           </Link>
         </div>
-        <div className="w-screen h-screen max-h-[calc(100vh-32px)] rounded-tl-md bg-base-100 ">
+        <div className="w-screen max-w-[calc(100vw-55px)] h-screen max-h-[calc(100vh-32px)] rounded-tl-md bg-base-100 ">
           <Outlet />
         </div>
       </div>

@@ -13,6 +13,17 @@
   "tauri": {
     "allowlist": {
       "all": false,
+      "path": {
+        "all": true
+      },
+      "dialog": {
+        "all": true,
+        "ask": true,
+        "confirm": true,
+        "message": true,
+        "open": true,
+        "save": true
+      },
       "fs": {
         "all": true,
         "readFile": true,
@@ -25,6 +36,13 @@
         "renameFile": true,
         "exists": true,
         "scope": [
+          "**",
+          "$RESOURCE/*",
+          "$RESOURCE/**/*",
+          "$RESOURCE/**",
+          "$RESOURCE/*",
+          "$RESOURCE/",
+          "$RESOURCE",
           "$HOME/**/*",
           "$HOME/**",
           "$HOME/*",
@@ -34,6 +52,11 @@
           "**/*",
           "/**/*"
         ]
+      },
+      "protocol": {
+        "all": true,
+        "asset": true,
+        "assetScope": ["**"]
       },
       "shell": {
         "all": false,
@@ -54,7 +77,8 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.dev",
+      "identifier": "com.taskscripter.app",
+      "resources": ["assets/*"],
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
