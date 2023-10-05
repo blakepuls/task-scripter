@@ -3,21 +3,20 @@ import { BaseDirectory } from "@tauri-apps/api/path";
 import { Console } from "console";
 
 export interface ITabMeta {
-  path: string; // Path to the file/tab
+  path: string;
   cursorPosition?: {
-    // Where the cursor was last
     line: number;
     character: number;
   };
-  isDirty?: boolean; // Indicates if there are unsaved changes
-  // Add more meta info as needed, bro!
+  isDirty?: boolean;
 }
 
 interface IEditorConfig {
-  tab_history?: string[]; // The tabs you've closed, in order
-  open_tabs?: ITabMeta[]; // Tabs currently open, in their order
-  active_tab_index?: number | null; // The index of the tab that's active (could replace 'last_tab')
-  // Got future vision? Add more rad properties here!
+  tab_history?: string[];
+  open_tabs?: ITabMeta[];
+  active_tab_index?: number | null;
+  backwardHistory?: ITabMeta[];
+  forwardHistory?: ITabMeta[];
 }
 
 // Removes the file from the given path, example src\src\index - Copy - Copy (2).py -> src\src\

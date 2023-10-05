@@ -85,7 +85,9 @@ export default function Editor() {
           console.log("Loading from temp file");
           // Delay the loading of the content to allow the temp file to be updated
           // await new Promise((resolve) => setTimeout(resolve, 250));
-          contentToLoad = await getTempFile(curTab.path);
+          contentToLoad = await fs.readTextFile(getTempFilePath(curTab.path), {
+            dir: BaseDirectory.Home,
+          });
         } else {
           console.log("Loading from actual file");
           contentToLoad = await fs.readTextFile(curTab.path, {

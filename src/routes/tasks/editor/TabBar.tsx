@@ -20,12 +20,12 @@ import {
   ITabMeta,
   deleteTempFile,
   getEditorConfig,
-  getTempFile,
   updateEditorConfig,
 } from "../../../utils/editor";
 import { VscClose } from "react-icons/vsc";
 import { ask } from "@tauri-apps/api/dialog";
 import SaveFileModal from "../../../components/Modals/SaveFiles";
+import FileIcon from "../../../components/FileIcon";
 
 function LanguageIcon({ language }: { language: string }) {
   switch (language) {
@@ -153,8 +153,10 @@ export function TabBar({
               closeTab(tab);
             }}
           />
-          <LanguageIcon
-            language={tab.path.split("/").pop()?.split(".")[1] || ""}
+          <FileIcon
+            className="w-6 h-6"
+            name={tab.path.split("/").pop()?.split(".")[1] || ""}
+            type={"file"}
           />
           <span className="truncate ml-1 text-lg">
             {tab.path.split("/").pop()}
