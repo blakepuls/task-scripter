@@ -17,15 +17,26 @@ import bat from "../../../assets/bat.svg";
 import ps from "../../../assets/ps.svg";
 import { BaseDirectory } from "@tauri-apps/api/path";
 import {
-  ITabMeta,
   deleteTempFile,
   getEditorConfig,
-  getTempFile,
   updateEditorConfig,
 } from "../../../utils/editor";
 import { VscClose } from "react-icons/vsc";
 import { ask } from "@tauri-apps/api/dialog";
 import SaveFileModal from "../../../components/Modals/SaveFiles";
+
+function debounce(
+  func: (...args: any[]) => void,
+  wait: number
+): (...args: any[]) => void {
+  let timeout: NodeJS.Timeout | null;
+  return function (...args: any[]) {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 function LanguageIcon({ language }: { language: string }) {
   switch (language) {
@@ -57,121 +68,117 @@ loader.init().then((monaco) => {
   });
 });
 
+export interface ITabMeta {
+  name: string;
+  file: string;
+  content?: string;
+  // saved?: boolean;
+  oldContent?: string;
+}
+
 interface ITabBar {
   tabs: ITabMeta[];
   setTabs: React.Dispatch<React.SetStateAction<ITabMeta[]>>;
-  curTab?: ITabMeta | null;
-  setCurTab: React.Dispatch<React.SetStateAction<ITabMeta | null>>;
-  content: string;
-  setContent: React.Dispatch<React.SetStateAction<string>>;
-  setSelectedTreeTab: React.Dispatch<React.SetStateAction<string | null>>;
-  selectedTreeTab: string | null;
-  expandedFolders: string[];
-  setExpandedFolders: React.Dispatch<React.SetStateAction<string[]>>;
+  curTab?: ITabMeta;
+  setCurTab: React.Dispatch<React.SetStateAction<ITabMeta | undefined>>;
 }
 
-export function TabBar({
-  tabs,
-  setTabs,
-  curTab,
-  setCurTab,
-  setContent,
-  setSelectedTreeTab,
-  selectedTreeTab,
-  expandedFolders,
-  setExpandedFolders,
-  content,
-}: ITabBar) {
+export function TabBar({ tabs, setTabs, curTab, setCurTab }: ITabBar) {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const task = window.location.pathname.split("/")[3];
 
   async function closeTab(tab: ITabMeta) {
-    deleteTempFile(tab.path);
-    setTabs(tabs.filter((t) => t.path !== tab.path));
-    setContent("");
-    // TODO: Add tab history implementation
+    setTabs(tabs.filter((t) => t.file !== tab.file));
+
+    const config = await getEditorConfig(task);
+    const updatedTabs =
+      config.open_tabs?.filter((t) => t.path !== tab.file) || [];
+    updateEditorConfig(task, {
+      open_tabs: updatedTabs,
+      tab_history: [tab.file, ...(config.tab_history || [])], // Push the closed tab to history
+    });
+
+    deleteTempFile(tab.file);
   }
 
-  async function saveTab(tab: ITabMeta) {
-    const newTabs = tabs.map((t) => {
-      if (t.path === tab.path) {
-        return { ...t, isDirty: false };
-      }
-      return t;
+  async function saveAndCloseTab(tab: ITabMeta) {
+    setTabs(tabs.filter((t) => t.file !== tab.file));
+
+    fs.writeFile({
+      contents: tab.content || "",
+      path: tab.file,
     });
-    setTabs(newTabs);
-    await updateEditorConfig(task, { open_tabs: newTabs });
-    console.log("Deleting");
-    await deleteTempFile(tab.path, true);
+
+    // Delete the temp file
+    deleteTempFile(tab.file);
   }
 
   async function changeTab(tab: ITabMeta) {
-    // If the folder is not expanded, expand it
-    // Open folders to the file
-    const pathParts = tab.path.split("/");
-    pathParts.pop();
-    let curPath = "";
-    pathParts.forEach((part) => {
-      curPath += `${part}/`;
-      setExpandedFolders((prev) =>
-        prev.includes(part) ? prev : [...prev, part]
-      );
-    });
+    if (!tab.content) {
+      const content = await fs.readTextFile(tab.file, {
+        dir: BaseDirectory.Home,
+      });
+      tab.content = content;
+    }
 
-    setSelectedTreeTab(tab.path);
+    updateEditorConfig(window.location.pathname.split("/")[3], {
+      open_tabs: [...tabs, tab.file],
+    });
     setCurTab(tab);
+    setTabs(tabs.map((t) => (t.file === tab.file ? tab : t)));
   }
+
+  // Whenever the curTab changes, update the editor config to add to the file history
+  useEffect(() => {
+    promise();
+
+    async function promise() {
+      const editor = await getEditorConfig(task);
+      if (!curTab) return;
+      const history =
+        editor.tab_history?.filter((tab) => tab !== curTab.file) || [];
+      updateEditorConfig(task, {
+        last_tab: curTab.file,
+        tab_history: [...history, curTab.file],
+      });
+    }
+  }, [curTab]);
 
   return (
     <div className="flex flex-row items-center bg-base-200 overflow-x-auto overflow-y-hidden tab-scroll min-h-12">
       {tabs?.map((tab, i) => (
         <button
-          onMouseEnter={() => setHoveredTab(tab.path)}
+          onMouseEnter={() => setHoveredTab(tab.file)}
           onMouseLeave={() => setHoveredTab(null)}
-          onClick={(e) => {
-            e.preventDefault();
-            changeTab(tab);
-          }}
-          key={tab.path}
           className={clsx(
             "pl-3 p-1.5 h-12 gap-1 flex flex-row items-center transition duration-300 outline-none max-w-xs",
             {
-              "hover:bg-base-300": tab.path !== curTab?.path,
-              "bg-base-100": tab.path === curTab?.path,
+              "hover:bg-base-300": tab.file !== curTab?.file,
+              "bg-base-100": tab.file === curTab?.file,
               "rounded-tl-md": i === 0,
             }
           )}
+          onClick={() => changeTab(tab)}
         >
           <SaveFileModal
-            file={"Change this name"}
+            file={tab.name}
             onCancel={() => {}}
-            onDontSave={() => {
-              closeTab(tab);
-            }}
-            onSave={() => {
-              saveTab(tab);
-              closeTab(tab);
-            }}
+            onDontSave={() => {}}
+            onSave={() => saveAndCloseTab(tab)}
           />
-          <LanguageIcon
-            language={tab.path.split("/").pop()?.split(".")[1] || ""}
-          />
-          <span className="truncate ml-1 text-lg">
-            {tab.path.split("/").pop()}
-          </span>
+          <LanguageIcon language={tab.name.split(".")[1]} />
+          <span className="truncate ml-1 text-lg">{tab.name}</span>
           <div className="w-8 h-4 flex items-center justify-center">
-            {tab.isDirty && hoveredTab !== tab.path && (
+            {tab.content !== tab.oldContent && hoveredTab !== tab.file && (
               <div className="p-1 w-3 h-3 bg-white rounded-full"></div>
             )}
-            {hoveredTab === tab.path && (
+            {hoveredTab === tab.file && (
               <VscClose
                 className="hover:bg-base-200 transition-all rounded-md text-3xl w-6 h-6"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (tab.isDirty)
-                    // @ts-ignore
-                    document.getElementById("save_files_modal").showModal();
-                  else closeTab(tab);
+                  // @ts-ignore
+                  document.getElementById("save_files_modal").showModal();
                 }}
               />
             )}

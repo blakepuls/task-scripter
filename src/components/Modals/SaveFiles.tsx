@@ -18,22 +18,13 @@ export default function SaveFileModal({
     <div>
       <dialog id="save_files_modal" className="modal">
         <div className="modal-box select-none">
-          <form method="dialog">
-            {/* if there is a button in form, it will close the modal */}
-            <button
-              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-              onClick={onCancel}
-            >
-              <VscClose className="text-xl" />
-            </button>
-          </form>
           <h3 className="font-bold text-lg text-left whitespace-break-spaces">
             Do you want to save the changes you made to {file}?
           </h3>
           <p className="py-4 text-left">
             Your changes will be lost if you don't save them.
           </p>
-          <div className="flex gap-3 ml-auto justify-end">
+          <form method="dialog" className="flex gap-3 ml-auto justify-end">
             <button className="btn btn-primary" onClick={onSave}>
               Save
             </button>
@@ -43,7 +34,7 @@ export default function SaveFileModal({
             <button className="btn" onClick={onCancel}>
               Cancel
             </button>
-          </div>
+          </form>
         </div>
       </dialog>
     </div>

@@ -6,95 +6,146 @@ import React, { useRef } from "react";
 import { getTask } from "../../../utils/tasks";
 import { BaseDirectory } from "@tauri-apps/api/path";
 import FileExplorer from "./FileExplorer";
-import { createTempFile, getEditorConfig } from "../../../utils/editor";
+import {
+  ITabMeta,
+  createTempFile,
+  getEditorConfig,
+  getTempFilePath,
+  updateEditorConfig,
+} from "../../../utils/editor";
 import { FileEntry } from "@tauri-apps/api/fs";
-import { ITab, TabBar, extensionToLanguage } from "./TabBar";
+import { TabBar, extensionToLanguage } from "./TabBar";
 
 export default function Editor() {
-  const [curTab, setCurTab] = useState<ITab | undefined>(undefined);
-  const [tabs, setTabs] = useState<ITab[]>([]);
+  const [curTab, setCurTab] = useState<ITabMeta | null>(null); // Explicitly set to null
 
+  const [tabs, setTabs] = useState<ITabMeta[]>([]);
+  const [content, setContent] = useState<string>("");
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const task = window.location.pathname.split("/")[3];
+  const [selectedTreeTab, setSelectedTreeTab] = useState<string | null>(
+    "yoooo"
+  );
+  const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
 
-  function contentChange(value?: string) {
-    setTabs(
-      tabs.map((tab) => {
-        if (tab.file === curTab?.file) {
-          tab.content = value;
-        }
-        return tab;
-      })
-    );
+  const handleEditorChange = (newValue: string) => {
+    setContent(newValue);
+    if (curTab) {
+      // Update the tab's content and mark it as "dirty"
+      setTabs((prevTabs) => {
+        return prevTabs.map((tab) => {
+          if (tab.path === curTab.path) {
+            return { ...tab, isDirty: true };
+          }
+          return tab;
+        });
+      });
 
-    if (!curTab) return;
-
-    setCurTab({
-      ...curTab,
-      content: value,
-    });
-
-    // Clear the previous timeout
-    if (timeoutIdRef.current) {
-      clearTimeout(timeoutIdRef.current);
+      // Save the changes to the temporary file
+      createTempFile(curTab.path, newValue);
     }
+  };
 
-    // Set a new timeout to debounce the file write
-    timeoutIdRef.current = setTimeout(() => {
-      createTempFile(curTab.file, value || "");
-    }, 500);
-  }
-  async function newEditor() {
-    const task = await getTask(window.location.pathname.split("/")[3]);
-    const tempConfig = await getEditorConfig(task.name);
-    const files = await fs.readDir(`.task-scripter/tasks/${task.name}/temp`, {
-      dir: BaseDirectory.Home,
-      recursive: true,
-    });
+  useEffect(() => {
+    async function loadTabs() {
+      const editorConfig = await getEditorConfig(task); // Replace with the appropriate task name
+      if (editorConfig.open_tabs) {
+        setTabs(editorConfig.open_tabs);
 
-    const newTabs: ITab[] = [];
-    await extractFiles(files);
-
-    async function extractFiles(files: FileEntry[]) {
-      for (const file of files) {
-        if (file.children) {
-          await extractFiles(file.children);
-        } else {
-          const content = await fs.readTextFile(file.path);
-          newTabs.push({
-            name: file.name!,
-            file: file.path.replace("temp/", "src/"),
-            oldContent: content,
-            // saved: true,
-            content,
-          });
+        if (typeof editorConfig.active_tab_index !== "undefined") {
+          setCurTab(editorConfig.open_tabs[editorConfig.active_tab_index || 0]);
         }
       }
     }
+    loadTabs();
+  }, []);
 
-    console.log("HERES THE NEW TABS", newTabs);
+  // Update editor config when the tabs change
+  useEffect(() => {
+    async function promise() {
+      const editorConfig = await getEditorConfig(task);
 
-    setTabs(newTabs);
-    if (tempConfig?.last_tab) {
-      setCurTab(newTabs.find((tab) => tab.file === tempConfig?.last_tab));
+      updateEditorConfig(task, {
+        ...editorConfig,
+        active_tab_index: tabs.findIndex((t) => t.path === curTab?.path),
+        open_tabs: tabs,
+      });
     }
-  }
+    promise();
+  }, [tabs]);
+
+  // If the current tab changes, load the content of the new tab
+  useEffect(() => {
+    // console.log("curTab change");
+    async function loadContent() {
+      if (curTab) {
+        console.log("Loading content", curTab.path);
+        let contentToLoad;
+        if (curTab.isDirty) {
+          console.log("Loading from temp file");
+          // Delay the loading of the content to allow the temp file to be updated
+          // await new Promise((resolve) => setTimeout(resolve, 250));
+          contentToLoad = await getTempFile(curTab.path);
+        } else {
+          console.log("Loading from actual file");
+          contentToLoad = await fs.readTextFile(curTab.path, {
+            dir: BaseDirectory.Home,
+          });
+        }
+        setContent(contentToLoad);
+      }
+    }
+
+    loadContent().then(() => {
+      // After content has been updated, then update the editor config
+      if (curTab) {
+        const activeTabIndex = tabs.findIndex((t) => t.path === curTab?.path);
+        updateEditorConfig(task, {
+          open_tabs: tabs,
+          active_tab_index: activeTabIndex === -1 ? null : activeTabIndex,
+        });
+      }
+    });
+  }, [curTab]);
 
   useEffect(() => {
-    newEditor();
-  }, []);
+    if (curTab) {
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+      }
+
+      timeoutIdRef.current = setTimeout(() => {
+        if (curTab.isDirty) {
+          fs.writeTextFile(getTempFilePath(curTab.path), content, {
+            dir: BaseDirectory.Home,
+          });
+        }
+      }, 50);
+    }
+  }, [content]);
 
   return (
     <div className="flex flex-col h-full w-full ">
       <div className="flex flex-grow w-full h-full bg-base-200 relative ">
         <FileExplorer
+          expandedFolders={expandedFolders}
+          setExpandedFolders={setExpandedFolders}
+          selectedTreeTab={selectedTreeTab}
+          setSelectedTreeTab={setSelectedTreeTab}
           setTabs={setTabs}
-          selectedTab={curTab}
+          curTab={curTab}
           setSelectedTab={setCurTab}
           tabs={tabs}
         />
         <div className="flex-grow flex-col overflow-hidden ">
           <div className="flex-none">
             <TabBar
+              selectedTreeTab={selectedTreeTab}
+              setSelectedTreeTab={setSelectedTreeTab}
+              expandedFolders={expandedFolders}
+              setExpandedFolders={setExpandedFolders}
+              setContent={setContent}
+              content={content}
               curTab={curTab}
               setCurTab={setCurTab}
               setTabs={setTabs}
@@ -103,14 +154,16 @@ export default function Editor() {
           </div>
           <div
             className={clsx("rounded-tl-md h-full overflow-hidden", {
-              "rounded-tl-none": curTab?.file === tabs[0]?.file,
+              "rounded-tl-none": curTab?.path === tabs[0]?.path,
             })}
           >
             <CodeEditor
               theme="task-scripter"
-              language={extensionToLanguage(curTab?.name.split(".")[1] || "")}
-              value={curTab?.content}
-              onChange={contentChange}
+              language={"python"}
+              value={content}
+              onChange={(v) => {
+                handleEditorChange(v || "");
+              }}
               className="rounded-lg "
               options={{
                 minimap: {

@@ -15,10 +15,6 @@ export default function Layout() {
   const defaultClass = "w-10 h-7";
   const linkClass = "hover:text-primary w-10 h-10 transition duration-300";
 
-  async function test() {
-    console.log(await getTasks());
-  }
-
   return (
     <div className="">
       <TitleBar />

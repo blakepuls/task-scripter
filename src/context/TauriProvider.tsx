@@ -42,7 +42,6 @@ export function TauriProvider({ children }: { children: ReactNode }) {
       const callTauriAPIs = async () => {
         setDownloadDir(await tauriPath.downloadDir());
         const _documents = await tauriPath.documentDir();
-        console.log("documents", _documents);
         setDocumentDir(_documents);
         const _osType = await os.type();
         setOsType(_osType);
@@ -53,7 +52,6 @@ export function TauriProvider({ children }: { children: ReactNode }) {
           recursive: true,
         });
         setAppDocuments(`${_documents}${APP_NAME}`);
-        console.log("appDocuments", `${_documents}${APP_NAME}`);
         setLoading(false);
       };
       callTauriAPIs().catch(console.error);
