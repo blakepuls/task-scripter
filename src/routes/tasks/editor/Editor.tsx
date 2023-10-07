@@ -7,6 +7,7 @@ import { getTask } from "../../../utils/tasks";
 import { BaseDirectory } from "@tauri-apps/api/path";
 import FileExplorer from "./FileExplorer";
 import {
+  IEditorConfig,
   ITabMeta,
   createTempFile,
   getEditorConfig,
@@ -15,7 +16,7 @@ import {
 } from "../../../utils/editor";
 import { FileEntry } from "@tauri-apps/api/fs";
 import { TabBar, extensionToLanguage } from "./TabBar";
-
+import { HotkeysProvider } from "react-hotkeys-hook";
 export default function Editor() {
   const [curTab, setCurTab] = useState<ITabMeta | null>(null); // Explicitly set to null
 
@@ -23,10 +24,9 @@ export default function Editor() {
   const [content, setContent] = useState<string>("");
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const task = window.location.pathname.split("/")[3];
-  const [selectedTreeTab, setSelectedTreeTab] = useState<string | null>(
-    "yoooo"
-  );
+  const [selectedTreeTab, setSelectedTreeTab] = useState<string | null>("");
   const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
+  const [editorConfig, setEditorConfig] = useState<IEditorConfig>({});
 
   const handleEditorChange = (newValue: string) => {
     setContent(newValue);
@@ -47,6 +47,9 @@ export default function Editor() {
   };
 
   useEffect(() => {
+    getEditorConfig(task).then((config) => {
+      setEditorConfig(config);
+    });
     async function loadTabs() {
       const editorConfig = await getEditorConfig(task); // Replace with the appropriate task name
       if (editorConfig.open_tabs) {
@@ -79,17 +82,13 @@ export default function Editor() {
     // console.log("curTab change");
     async function loadContent() {
       if (curTab) {
-        console.log("Loading content", curTab.path);
         let contentToLoad;
         if (curTab.isDirty) {
-          console.log("Loading from temp file");
-          // Delay the loading of the content to allow the temp file to be updated
-          // await new Promise((resolve) => setTimeout(resolve, 250));
           contentToLoad = await fs.readTextFile(getTempFilePath(curTab.path), {
             dir: BaseDirectory.Home,
           });
         } else {
-          console.log("Loading from actual file");
+          console.log("Loading from file");
           contentToLoad = await fs.readTextFile(curTab.path, {
             dir: BaseDirectory.Home,
           });
@@ -128,55 +127,59 @@ export default function Editor() {
 
   return (
     <div className="flex flex-col h-full w-full ">
-      <div className="flex flex-grow w-full h-full bg-base-200 relative ">
-        <FileExplorer
-          expandedFolders={expandedFolders}
-          setExpandedFolders={setExpandedFolders}
-          selectedTreeTab={selectedTreeTab}
-          setSelectedTreeTab={setSelectedTreeTab}
-          setTabs={setTabs}
-          curTab={curTab}
-          setSelectedTab={setCurTab}
-          tabs={tabs}
-        />
-        <div className="flex-grow flex-col overflow-hidden ">
-          <div className="flex-none">
-            <TabBar
-              selectedTreeTab={selectedTreeTab}
-              setSelectedTreeTab={setSelectedTreeTab}
-              expandedFolders={expandedFolders}
-              setExpandedFolders={setExpandedFolders}
-              setContent={setContent}
-              content={content}
-              curTab={curTab}
-              setCurTab={setCurTab}
-              setTabs={setTabs}
-              tabs={tabs}
-            />
-          </div>
-          <div
-            className={clsx("rounded-tl-md h-full overflow-hidden", {
-              "rounded-tl-none": curTab?.path === tabs[0]?.path,
-            })}
-          >
-            <CodeEditor
-              theme="task-scripter"
-              language={"python"}
-              value={content}
-              onChange={(v) => {
-                handleEditorChange(v || "");
-              }}
-              className="rounded-lg "
-              options={{
-                minimap: {
-                  enabled: false,
-                },
-                fontSize: 18,
-              }}
-            />
+      <HotkeysProvider>
+        <div className="flex flex-grow w-full h-full bg-base-200 relative ">
+          <FileExplorer
+            expandedFolders={expandedFolders}
+            setExpandedFolders={setExpandedFolders}
+            selectedTreeTab={selectedTreeTab}
+            setSelectedTreeTab={setSelectedTreeTab}
+            setTabs={setTabs}
+            curTab={curTab}
+            setSelectedTab={setCurTab}
+            tabs={tabs}
+          />
+          <div className="flex-grow flex-col overflow-hidden ">
+            <div className="flex-none">
+              <TabBar
+                editorConfig={editorConfig}
+                setEditorConfig={setEditorConfig}
+                selectedTreeTab={selectedTreeTab}
+                setSelectedTreeTab={setSelectedTreeTab}
+                expandedFolders={expandedFolders}
+                setExpandedFolders={setExpandedFolders}
+                setContent={setContent}
+                content={content}
+                curTab={curTab}
+                setCurTab={setCurTab}
+                setTabs={setTabs}
+                tabs={tabs}
+              />
+            </div>
+            <div
+              className={clsx("rounded-tl-md h-full overflow-hidden", {
+                "rounded-tl-none": curTab?.path === tabs[0]?.path,
+              })}
+            >
+              <CodeEditor
+                theme="task-scripter"
+                language={"python"}
+                value={content}
+                onChange={(v) => {
+                  handleEditorChange(v || "");
+                }}
+                className="rounded-lg "
+                options={{
+                  minimap: {
+                    enabled: false,
+                  },
+                  fontSize: 18,
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </HotkeysProvider>
     </div>
   );
 }

@@ -17,15 +17,19 @@ import bat from "../../../assets/bat.svg";
 import ps from "../../../assets/ps.svg";
 import { BaseDirectory } from "@tauri-apps/api/path";
 import {
+  IEditorConfig,
   ITabMeta,
   deleteTempFile,
   getEditorConfig,
+  saveTempFile,
   updateEditorConfig,
 } from "../../../utils/editor";
 import { VscClose } from "react-icons/vsc";
 import { ask } from "@tauri-apps/api/dialog";
 import SaveFileModal from "../../../components/Modals/SaveFiles";
 import FileIcon from "../../../components/FileIcon";
+import { useKeybinds } from "../../../context/KeybindsProvider";
+import { useHotkeys } from "react-hotkeys-hook";
 
 function LanguageIcon({ language }: { language: string }) {
   switch (language) {
@@ -68,6 +72,8 @@ interface ITabBar {
   selectedTreeTab: string | null;
   expandedFolders: string[];
   setExpandedFolders: React.Dispatch<React.SetStateAction<string[]>>;
+  editorConfig: IEditorConfig;
+  setEditorConfig: React.Dispatch<React.SetStateAction<IEditorConfig>>;
 }
 
 export function TabBar({
@@ -80,16 +86,39 @@ export function TabBar({
   selectedTreeTab,
   expandedFolders,
   setExpandedFolders,
+  editorConfig,
+  setEditorConfig,
   content,
 }: ITabBar) {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const task = window.location.pathname.split("/")[3];
+  const { handleKeyPress, addKeybind } = useKeybinds();
+  const defaultHotkeySettings = {
+    keydown: true,
+    keyup: false,
+    preventDefault: true,
+    enableOnFormTags: true,
+  };
 
-  async function closeTab(tab: ITabMeta) {
+  function closeTab(tab: ITabMeta) {
+    if (tab.isDirty)
+      // @ts-ignore
+      document.getElementById("save_files_modal").showModal();
+    else removeTab(tab);
+  }
+
+  async function removeTab(tab: ITabMeta) {
     deleteTempFile(tab.path);
     setTabs(tabs.filter((t) => t.path !== tab.path));
     setContent("");
-    // TODO: Add tab history implementation
+    // Stash the closed tab in the backward history.
+    const updatedEditorConfig = {
+      ...(await getEditorConfig(task)),
+      backwardHistory: [...(editorConfig.backwardHistory || []), tab],
+    };
+    setEditorConfig(updatedEditorConfig);
+    await updateEditorConfig(task, updatedEditorConfig);
+    goBackward();
   }
 
   async function saveTab(tab: ITabMeta) {
@@ -99,15 +128,14 @@ export function TabBar({
       }
       return t;
     });
-    setTabs(newTabs);
     await updateEditorConfig(task, { open_tabs: newTabs });
-    console.log("Deleting");
-    await deleteTempFile(tab.path, true);
+    await saveTempFile(tab.path, content);
+    await deleteTempFile(tab.path);
+    setTabs(newTabs);
+    setCurTab({ ...tab, isDirty: false });
   }
 
   async function changeTab(tab: ITabMeta) {
-    // If the folder is not expanded, expand it
-    // Open folders to the file
     const pathParts = tab.path.split("/");
     pathParts.pop();
     let curPath = "";
@@ -118,9 +146,93 @@ export function TabBar({
       );
     });
 
+    const updatedEditorConfig = {
+      ...(await getEditorConfig(task)),
+      backwardHistory: [...(editorConfig.backwardHistory || []), curTab].filter(
+        (tab): tab is ITabMeta => !!tab
+      ),
+      forwardHistory: [], // Clear the forward history when changing tabs
+    };
+    await updateEditorConfig(task, updatedEditorConfig);
+    setEditorConfig(updatedEditorConfig);
+
     setSelectedTreeTab(tab.path);
     setCurTab(tab);
   }
+
+  async function goBackward() {
+    const [lastTab, ...rest] = editorConfig.backwardHistory || [];
+    if (lastTab) {
+      const updatedEditorConfig = {
+        ...editorConfig,
+        backwardHistory: rest.filter((tab): tab is ITabMeta => !!tab),
+        forwardHistory: [curTab, ...(editorConfig.forwardHistory || [])].filter(
+          (tab): tab is ITabMeta => !!tab
+        ),
+      };
+      setEditorConfig(updatedEditorConfig); // Update your state with the new config
+      await updateEditorConfig(task, updatedEditorConfig);
+      changeTab(lastTab);
+    }
+  }
+
+  async function goForward() {
+    const [nextTab, ...rest] = editorConfig.forwardHistory || [];
+    if (nextTab) {
+      const updatedEditorConfig = {
+        ...editorConfig,
+        forwardHistory: rest.filter((tab): tab is ITabMeta => !!tab),
+        backwardHistory: [
+          curTab,
+          ...(editorConfig.backwardHistory || []),
+        ].filter((tab): tab is ITabMeta => !!tab),
+      };
+      setEditorConfig(updatedEditorConfig);
+      await updateEditorConfig(task, updatedEditorConfig);
+      changeTab(nextTab);
+    }
+  }
+
+  // ALT + LEFT, go back
+  useHotkeys("a", () => goBackward(), defaultHotkeySettings);
+
+  // ALT + RIGHT, go forward
+  useHotkeys("d", () => goForward(), defaultHotkeySettings);
+
+  // CTRL + S, save file
+  useHotkeys("ctrl+s", () => curTab && saveTab(curTab), defaultHotkeySettings);
+
+  // CTRL + W, close tab
+  useHotkeys("ctrl+w", () => curTab && closeTab(curTab), defaultHotkeySettings);
+
+  // CTRL + SHIFT + T, open previously closed tab
+  useHotkeys(
+    "ctrl+shift+t",
+    () => {
+      const [lastTab, ...rest] = editorConfig.backwardHistory || [];
+      // If lasttab.path is in the open tabs, change to that tab
+      if (lastTab && tabs.find((tab) => tab.path === lastTab.path)) {
+        changeTab(lastTab);
+        return;
+      }
+
+      if (lastTab) {
+        const updatedEditorConfig = {
+          ...editorConfig,
+          backwardHistory: rest.filter((tab): tab is ITabMeta => !!tab),
+          forwardHistory: [
+            curTab,
+            ...(editorConfig.forwardHistory || []),
+          ].filter((tab): tab is ITabMeta => !!tab),
+        };
+        setEditorConfig(updatedEditorConfig);
+        updateEditorConfig(task, updatedEditorConfig);
+        setTabs([...tabs, lastTab]);
+        changeTab(lastTab);
+      }
+    },
+    defaultHotkeySettings
+  );
 
   return (
     <div className="flex flex-row items-center bg-base-200 overflow-x-auto overflow-y-hidden tab-scroll min-h-12">
@@ -146,11 +258,11 @@ export function TabBar({
             file={"Change this name"}
             onCancel={() => {}}
             onDontSave={() => {
-              closeTab(tab);
+              removeTab(tab);
             }}
             onSave={() => {
               saveTab(tab);
-              closeTab(tab);
+              removeTab(tab);
             }}
           />
           <FileIcon
@@ -170,10 +282,7 @@ export function TabBar({
                 className="hover:bg-base-200 transition-all rounded-md text-3xl w-6 h-6"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (tab.isDirty)
-                    // @ts-ignore
-                    document.getElementById("save_files_modal").showModal();
-                  else closeTab(tab);
+                  closeTab(tab);
                 }}
               />
             )}

@@ -10,6 +10,7 @@ import { SettingsProvider } from "./context/SettingsProvider";
 import Tasks from "./routes/tasks";
 import Logs from "./routes/logs";
 import Editor from "./routes/tasks/editor/Editor";
+import { KeybindContext, KeybindProvider } from "./context/KeybindsProvider";
 
 const router = createBrowserRouter([
   {
@@ -41,7 +42,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <TauriProvider>
       <SettingsProvider>
-        <RouterProvider router={router} />
+        <KeybindProvider>
+          <RouterProvider router={router} />
+        </KeybindProvider>
       </SettingsProvider>
     </TauriProvider>
   </React.StrictMode>

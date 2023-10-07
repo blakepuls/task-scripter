@@ -11,7 +11,7 @@ export interface ITabMeta {
   isDirty?: boolean;
 }
 
-interface IEditorConfig {
+export interface IEditorConfig {
   tab_history?: string[];
   open_tabs?: ITabMeta[];
   active_tab_index?: number | null;
@@ -45,6 +45,24 @@ export async function createTempFile(path: string, content: string) {
   fs.writeFile(file, content, { dir: BaseDirectory.Home });
 }
 
+export async function saveTempFile(path: string, content: string) {
+  const task = path
+    .split(".task-scripter/tasks/")[1]
+    .split(".task")[0]
+    .split("/")[0];
+
+  let file = path.split(".task-scripter/tasks/")[1].split("/")[1];
+  let tempFile = path.split(task)[1];
+  file = `.task-scripter/tasks/${task}/${tempFile}`;
+
+  await fs.createDir(getDirFromFile(file), {
+    recursive: true,
+    dir: BaseDirectory.Home,
+  });
+
+  fs.writeFile(file, content, { dir: BaseDirectory.Home });
+}
+
 export async function deleteTempFile(path: string, save?: boolean) {
   const task = path
     .split(".task-scripter/tasks/")[1]
@@ -57,11 +75,11 @@ export async function deleteTempFile(path: string, save?: boolean) {
   // Get the contents of the file
   const content = await fs.readTextFile(file, { dir: BaseDirectory.Home });
   // Save the contents to the original file
-  if (save) {
-    console.log("Writing");
-    fs.writeFile(path, content, { dir: BaseDirectory.Home });
-    console.log("Written");
-  }
+  // if (save) {
+  //   console.log("Writing");
+  //   fs.writeFile(path, content, { dir: BaseDirectory.Home });
+  //   console.log("Written");
+  // }
   console.log("deleting");
   // Delete the temp file
   await fs.removeFile(file, { dir: BaseDirectory.Home });
