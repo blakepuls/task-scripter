@@ -98,6 +98,15 @@ export function TabBar({
   const { handleKeyPress, addKeybind } = useKeybinds();
   const [tabToClose, setTabToClose] = useState<ITabMeta | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const {
+    tabs,
+    activeTabIndex,
+    openTab,
+    closeTab,
+    switchTab,
+    goBackward,
+    goForward,
+  } = tabManager;
 
   const defaultHotkeySettings = {
     keydown: true,

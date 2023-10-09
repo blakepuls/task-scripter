@@ -1,0 +1,44 @@
+.monaco-editor {
+  font-size: xx-large !important; /* Adjust as needed */
+  /* override corner radius */
+  padding-top: 15px;
+}
+
+/* Your existing stuff */
+.tab-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -ms-overflow-style: none; /* IE 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* For Webkit browsers like Chrome & Safari */
+.tab-scroll::-webkit-scrollbar {
+  height: 4px; /* You can set it as thin as you want */
+}
+
+.tab-scroll::-webkit-scrollbar-thumb {
+  background-color: #888;
+  transition: background-color 0.3s ease; /* Here's the magic */
+}
+
+.tab-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+}
+
+/* For Firefox */
+.tab-scroll {
+  scrollbar-color: #888 #f1f1f1;
+  scrollbar-width: thin; /* Or you can set a fixed px value */
+}
+
+.react-resizable-handle {
+  width: 8px !important;
+  height: 100% !important;
+  cursor: e-resize !important;
+  background: rgba(0, 0, 0, 0);
+  position: absolute;
+  top: 0;
+  right: 0;
+}
